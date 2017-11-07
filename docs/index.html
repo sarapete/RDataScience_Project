@@ -654,11 +654,6 @@ PRzips</code></pre>
 ## 17 MULTIPOLYGON (((-66.03084 1...
 ## 18 MULTIPOLYGON (((-66.292568 ...
 ## 19 MULTIPOLYGON (((-66.91667 1...</code></pre>
-<p>Plot PR zip codes– this is a first graphic output for the project. Future iterations will be much better.</p>
-<pre class="r"><code>plot(PRzips)</code></pre>
-<pre><code>## Warning: plotting the first 10 out of 11 attributes; use max.plot = 11 to
-## plot all</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
 <p>Join the Buffalo Shelter Data and the PRdataframe by zip code, then assign coordinates using “Longitude” and “Latitude”. You can now plot the general location of where homeless people were coming from based on the controid coordinates of their zip code origin.</p>
 <pre class="r"><code>BufDataLL&lt;-inner_join(Buffalo_Shelter_Data, PRdataframe, by= &quot;Zip&quot;)
 coordinates(BufDataLL)&lt;-c(&quot;Longitude&quot;,&quot;Latitude&quot;)
@@ -712,14 +707,14 @@ count_in_zips_polygons&lt;-inner_join(Buffalo_Shelter_Data, PRzips, by= c(&quot;
 <pre class="r"><code>##map of boundaries
 ggplot(PRzips)+
   geom_sf(lwd=0.2,fill=&quot;#f0f0f0&quot;)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p><img src="index_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
 <p>Choropleth map of density (number of people coming to Buffalo from each Puerto Rican zip code)</p>
 <pre class="r"><code>###choropleth map of density
 ggplot(PRzips)+
   geom_sf(lwd=0.2,fill=&quot;#f0f0f0&quot;)+
   geom_sf(data=count_in_zips_polygons, aes(fill = n)) +
   scale_fill_gradient(low = &quot;yellow&quot;, high = &quot;red&quot;)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<p><img src="index_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
 <p>Map of centroid dots of location of origin; color indicating number coming from that place</p>
 <pre class="r"><code>#create points as data frame to use in ggplot
 points &lt;- data.frame(count_in_zips_points)
@@ -729,13 +724,13 @@ ggplot(PRzips)+
   geom_sf(lwd=0.2,fill=&quot;#f0f0f0&quot;)+
   geom_point(data=points, aes(x=Longitude, y=Latitude, colour=n))+
   scale_colour_gradient(low = &quot;yellow&quot;, high = &quot;red&quot;)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<p><img src="index_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
 <p>Map of centroid dots of location of origin; size indicating number coming from that place</p>
 <pre class="r"><code>##map of dots, sized by number
 ggplot(PRzips)+
   geom_sf(lwd=0.2,fill=&quot;#f0f0f0&quot;)+
   geom_point(data=points, aes(x=Longitude, y=Latitude, size=n, alpha=.5))</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<p><img src="index_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
 <p>Map of migration to Buffalo along great circle lines, weighted by the number of people coming from each place (darker = more people)</p>
 <pre class="r"><code>xlim &lt;- c(-140, -55.5)
 ylim &lt;- c(12, 50)
@@ -752,7 +747,7 @@ for (j in 1:length(points$n)) {
 
 lines(inter, col=colors[colindex], lwd=0.8)
 }</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+<p><img src="index_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
 <p>Zoomed-in map of migration to Buffalo along great circle lines, weighted by the number from each place (darker = more people)</p>
 <pre class="r"><code>xlim &lt;- c(-90, -60)
 ylim &lt;- c(18, 45)
@@ -769,7 +764,7 @@ for (j in 1:length(points$n)) {
   
   lines(inter, col=colors[colindex], lwd=0.8)
 }</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+<p><img src="index_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
 </div>
 <div id="conclusions" class="section level1">
 <h1>Conclusions</h1>
