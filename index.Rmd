@@ -102,7 +102,7 @@ Join the Buffalo Shelter Data and the PRdataframe by zip code, then assign coord
 BufDataLL<-inner_join(Buffalo_Shelter_Data, PRdataframe, by= "Zip")
 coordinates(BufDataLL)<-c("Longitude","Latitude")
 #View(BufDataLL)
-plot(BufDataLL)
+#plot(BufDataLL)
 
 ```
 
@@ -114,7 +114,7 @@ Summarize the data by the count of individuals coming from each of the different
 ```{r}
 #create count_in_zips, which is an inner join of the Buffalo Shelter Data and the PRzips sf object, then group by zip code and summarize
 count_in_zips<-inner_join(Buffalo_Shelter_Data, PRzips, by= c("Zip" = "ZCTA5CE10"))%>%group_by(Zip)%>%summarise(n=n())
-count_in_zips
+#count_in_zips
 
 #create count_in_zips_points, which is a left join of the count_in_zips data frame that you just created and the PRdataframe that has the locations of the zip codes
 count_in_zips_points<-left_join(count_in_zips,PRdataframe,by= "Zip")
@@ -123,12 +123,12 @@ coordinates(count_in_zips_points)<-c("Longitude","Latitude")
 #set as sf
 st_as_sf(count_in_zips_points)
 #plot 
-plot(count_in_zips_points)
+#plot(count_in_zips_points)
 
 #create count_in_zips_polygons, which is the count_in_zips dataframe set as a sf
 count_in_zips_polygons<-inner_join(Buffalo_Shelter_Data, PRzips, by= c("Zip" = "ZCTA5CE10"))%>%st_as_sf()%>%group_by(Zip)%>%summarise(n=n())
 #plot
-plot(count_in_zips_polygons)
+#plot(count_in_zips_polygons)
 
 ```
 
