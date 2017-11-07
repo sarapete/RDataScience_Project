@@ -663,30 +663,13 @@ PRzips</code></pre>
 <pre class="r"><code>BufDataLL&lt;-inner_join(Buffalo_Shelter_Data, PRdataframe, by= &quot;Zip&quot;)
 coordinates(BufDataLL)&lt;-c(&quot;Longitude&quot;,&quot;Latitude&quot;)
 #View(BufDataLL)
-plot(BufDataLL)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+#plot(BufDataLL)</code></pre>
 <p>Summarize the data by the count of individuals coming from each of the different zip codes.</p>
 <pre class="r"><code>#create count_in_zips, which is an inner join of the Buffalo Shelter Data and the PRzips sf object, then group by zip code and summarize
 count_in_zips&lt;-inner_join(Buffalo_Shelter_Data, PRzips, by= c(&quot;Zip&quot; = &quot;ZCTA5CE10&quot;))%&gt;%group_by(Zip)%&gt;%summarise(n=n())
-count_in_zips</code></pre>
-<pre><code>## # A tibble: 14 x 2
-##      Zip     n
-##    &lt;chr&gt; &lt;int&gt;
-##  1 00610     2
-##  2 00676     2
-##  3 00683     1
-##  4 00720     5
-##  5 00735     3
-##  6 00771     4
-##  7 00772     4
-##  8 00791     6
-##  9 00907     5
-## 10 00924     7
-## 11 00926     1
-## 12 00962     2
-## 13 00976     1
-## 14 00983     7</code></pre>
-<pre class="r"><code>#create count_in_zips_points, which is a left join of the count_in_zips data frame that you just created and the PRdataframe that has the locations of the zip codes
+#count_in_zips
+
+#create count_in_zips_points, which is a left join of the count_in_zips data frame that you just created and the PRdataframe that has the locations of the zip codes
 count_in_zips_points&lt;-left_join(count_in_zips,PRdataframe,by= &quot;Zip&quot;)
 #set the coordinates
 coordinates(count_in_zips_points)&lt;-c(&quot;Longitude&quot;,&quot;Latitude&quot;)
@@ -716,13 +699,12 @@ st_as_sf(count_in_zips_points)</code></pre>
 ## 13 00976     1 Trujillo Alto    PR &lt;POINT (-66.0...&gt;
 ## 14 00983     7      Carolina    PR &lt;POINT (-65.9...&gt;</code></pre>
 <pre class="r"><code>#plot 
-plot(count_in_zips_points)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
-<pre class="r"><code>#create count_in_zips_polygons, which is the count_in_zips dataframe set as a sf
+#plot(count_in_zips_points)
+
+#create count_in_zips_polygons, which is the count_in_zips dataframe set as a sf
 count_in_zips_polygons&lt;-inner_join(Buffalo_Shelter_Data, PRzips, by= c(&quot;Zip&quot; = &quot;ZCTA5CE10&quot;))%&gt;%st_as_sf()%&gt;%group_by(Zip)%&gt;%summarise(n=n())
 #plot
-plot(count_in_zips_polygons)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-8-2.png" width="672" /></p>
+#plot(count_in_zips_polygons)</code></pre>
 </div>
 <div id="results" class="section level1">
 <h1>Results</h1>

@@ -91,11 +91,6 @@ PRzips<-zctas(cb = FALSE, starts_with = NULL, year = 2010, state = "PR")%>%
 PRzips
 ```
 
-Plot PR zip codes-- this is a first graphic output for the project. Future iterations will be much better.
-```{r}
-plot(PRzips)
-```
-
 
 Join the Buffalo Shelter Data and the PRdataframe by zip code, then assign coordinates using "Longitude" and "Latitude". You can now plot the general location of where homeless people were coming from based on the controid coordinates of their zip code origin.
 ```{r}
