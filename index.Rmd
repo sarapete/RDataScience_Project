@@ -1,13 +1,13 @@
 ---
-title: "I have the best titles"
-author: Your name here
-subtitle: Subtitle here if desired
+title: "Visualizing Puerto Rican Homelessness in Western New York"
+author: "Sara Peterson"
+subtitle: null
 ---
 
 # Introduction
-My really awesome and complete introduction will go here.  
+Homeless individuals are among the most marginalized populations of society. Homeless populations are further marginalized in data collection and representation. Even efforts specifically intended to record homeless data can inadvertently further marginalize certain groups of homeless individuals, as seen in an anonymized data set of homeless shelter visits in Erie County in 2015, provided by the Homeless Alliance of WNY. Previous research found that there were data issues in this official data set, as zip codes that were viewed as “incomplete” were thrown out of the official data set. This led to migrants from particular places being omitted from data analysis and official reports. Those individuals ignored in official reports includes 46 individuals who moved from Puerto Rico before becoming homeless in Erie County. This project uses R to visually represent this phenomenon of individuals moving from Puerto Rico before becoming homeless in Western New York. It maps the origins of these individuals and visually represents migration as movement along great circle lines.
 
-> I know words.  I have the best words.  ~ Donald Trump
+
 
 # Materials and methods
 
@@ -28,53 +28,197 @@ You can do numbers like this:
 See [http://rmarkdown.rstudio.com/](http://rmarkdown.rstudio.com/) for all the amazing things you can do.
 
 
-Here's my first code chunk.
-```{r}
-1+2
-```
-
 Load any required packages in a code chunk (you may need to install some packages):
 
 ```{r, message=F, warning=F}
+library(zipcode)
+library(readxl)
+library(rgeos)
 library(dplyr)
-library(ggplot2)
+library(tidyverse)
 library(maps)
-library(spocc)
+library(ggmap)
+library(choroplethr)
+library(USAboundaries)
+library(tigris)
+library(sf)
+library(geosphere)
+library(RColorBrewer)
+library(maptools)
+library(ggplot2)
+
 knitr::opts_chunk$set(cache=TRUE)  # cache the results for quick compiling
 ```
 
 
-We are going to use the `occ()` function to download _occurrence_ records for the American robin (_Turdus migratorius_) from the [Global Biodiversity Information Facility](gbif.org).
 
-<img src="https://upload.wikimedia.org/wikipedia/commons/b/b8/Turdus-migratorius-002.jpg" alt="alt text" width="200">
-<small><small><small>Licensed under CC BY-SA 3.0 via [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Turdus-migratorius-002.jpg#/media/File:Turdus-migratorius-002.jpg)</small></small></small>
 
-```{r, warning=F} 
-## define which species to query
-sp='Turdus migratorius'
+Read in the anonymized data set provided by the Western New York Homeless Alliance
 
-## run the query and convert to data.frame()
-d = occ(query=sp, from='ebird',limit = 100) %>% occ2df()
+```{r}
+Buffalo_Shelter_Data <- read_csv("~/Desktop/Adam's Class/*final project/Buffalo Shelter Data (original).csv")
 ```
-This can take a few seconds.
 
-```{r, fig.width=6, fig.height=3, fig.cap="Map illustrating the known occurrence locations"}
-# Load coastline
-map=map_data("world")
-
-ggplot(d,aes(x=longitude,y=latitude))+
-  geom_polygon(aes(x=long,y=lat,group=group),data=map)+
-  geom_point(col="red")+
-  coord_equal()
+Use the zipcode package to clean the zipcodes in the Buffalo Shelter Data CSV
+```{r}
+clean.zipcodes(Buffalo_Shelter_Data)
 ```
+
+
+
+Use the zipcode package to create a data frame with the zipcodes for Puerto Rico. Rename the column heads so that they can later be more easily joined to the Buffalo Shelter Data
+```{r}
+## the final output from this section of code isn't ready to go yet, but it will be used to generate a map in future iterations of the project
+
+data("zipcode")
+names<-c("Zip","City","State","Latitude","Longitude")
+colnames(zipcode, do.NULL = TRUE, prefix = "col")
+colnames(zipcode)<-names
+PRdataframe<-filter(zipcode,State=="PR")
+PRdataframe
+```
+
+
+
+Use the tigris package to download the physical boundaries for Puerto Rico zip codes and convert to sf
+```{r}
+#run the following line of code only once to download the boundary data -- it may take awhile
+#zips<-zctas(cb = FALSE, starts_with = NULL, year = 2010, state = NULL)
+#use the following line of code to 
+options(tigris_use_cache = TRUE)
+PRzips<-zctas(cb = FALSE, starts_with = NULL, year = 2010, state = "PR")%>%
+  st_as_sf()
+PRzips
+```
+
+Plot PR zip codes-- this is a first graphic output for the project. Future iterations will be much better.
+```{r}
+plot(PRzips)
+```
+
+
+Join the Buffalo Shelter Data and the PRdataframe by zip code, then assign coordinates using "Longitude" and "Latitude". You can now plot the general location of where homeless people were coming from based on the controid coordinates of their zip code origin.
+```{r}
+BufDataLL<-inner_join(Buffalo_Shelter_Data, PRdataframe, by= "Zip")
+coordinates(BufDataLL)<-c("Longitude","Latitude")
+#View(BufDataLL)
+plot(BufDataLL)
+
+```
+
+
+
+
+
+Summarize the data by the count of individuals coming from each of the different zip codes.
+```{r}
+#create count_in_zips, which is an inner join of the Buffalo Shelter Data and the PRzips sf object, then group by zip code and summarize
+count_in_zips<-inner_join(Buffalo_Shelter_Data, PRzips, by= c("Zip" = "ZCTA5CE10"))%>%group_by(Zip)%>%summarise(n=n())
+count_in_zips
+
+#create count_in_zips_points, which is a left join of the count_in_zips data frame that you just created and the PRdataframe that has the locations of the zip codes
+count_in_zips_points<-left_join(count_in_zips,PRdataframe,by= "Zip")
+#set the coordinates
+coordinates(count_in_zips_points)<-c("Longitude","Latitude")
+#set as sf
+st_as_sf(count_in_zips_points)
+#plot 
+plot(count_in_zips_points)
+
+#create count_in_zips_polygons, which is the count_in_zips dataframe set as a sf
+count_in_zips_polygons<-inner_join(Buffalo_Shelter_Data, PRzips, by= c("Zip" = "ZCTA5CE10"))%>%st_as_sf()%>%group_by(Zip)%>%summarise(n=n())
+#plot
+plot(count_in_zips_polygons)
+
+```
+
+
 
 
 # Results
 
-Show tables, plots, etc. and describe them.
+Map of the Puerto Rico zip code boundaries using ggplot
+```{r}
+##map of boundaries
+ggplot(PRzips)+
+  geom_sf(lwd=0.2,fill="#f0f0f0")
+```
+
+Choropleth map of density (number of people coming to Buffalo from each Puerto Rican zip code)
+```{r}
+###choropleth map of density
+ggplot(PRzips)+
+  geom_sf(lwd=0.2,fill="#f0f0f0")+
+  geom_sf(data=count_in_zips_polygons, aes(fill = n)) +
+  scale_fill_gradient(low = "yellow", high = "red")
+```
+
+
+
+Map of centroid dots of location of origin; color indicating number coming from that place
+```{r}
+#create points as data frame to use in ggplot
+points <- data.frame(count_in_zips_points)
+
+#plot
+ggplot(PRzips)+
+  geom_sf(lwd=0.2,fill="#f0f0f0")+
+  geom_point(data=points, aes(x=Longitude, y=Latitude, colour=n))+
+  scale_colour_gradient(low = "yellow", high = "red")
+```
+
+
+Map of centroid dots of location of origin; size indicating number coming from that place
+```{r}
+##map of dots, sized by number
+ggplot(PRzips)+
+  geom_sf(lwd=0.2,fill="#f0f0f0")+
+  geom_point(data=points, aes(x=Longitude, y=Latitude, size=n, alpha=.5))
+
+```
+
+
+Map of migration to Buffalo along great circle lines, weighted by the number of people coming from each place (darker = more people)
+```{r}
+
+xlim <- c(-140, -55.5)
+ylim <- c(12, 50)
+BuffaloCoordinates=as.matrix(geocode("Buffalo, NY"))
+
+pal <- colorRampPalette(c("#f2f2f2", "black"))
+colors <- pal(100)
+
+map("world", col="#f1f1f1", fill=TRUE, bg="white", lwd=0.2, xlim=xlim, ylim=ylim)
+for (j in 1:length(points$n)) {
+  inter <- gcIntermediate(c(points[j,]$Longitude, points[j,]$Latitude), BuffaloCoordinates, n=100, addStartEnd=TRUE)
+  
+  colindex <- round( (points[j,]$n / 7) * length(colors) )
+
+lines(inter, col=colors[colindex], lwd=0.8)
+}
+```
+
+
+
+Zoomed-in map of migration to Buffalo along great circle lines, weighted by the number from each place (darker = more people)
 
 ```{r}
-summary(d)
+
+xlim <- c(-90, -60)
+ylim <- c(18, 45)
+BuffaloCoordinates=as.matrix(geocode("Buffalo, NY"))
+
+pal <- colorRampPalette(c("#f2f2f2", "black"))
+colors <- pal(100)
+
+map("world", col="#f1f1f1", fill=TRUE, bg="white", lwd=0.2, xlim=xlim, ylim=ylim)
+for (j in 1:length(points$n)) {
+  inter <- gcIntermediate(c(points[j,]$Longitude, points[j,]$Latitude), BuffaloCoordinates, n=100, addStartEnd=TRUE)
+  
+  colindex <- round( (points[j,]$n / 7) * length(colors) )
+  
+  lines(inter, col=colors[colindex], lwd=0.8)
+}
 ```
 
 # Conclusions
@@ -82,4 +226,3 @@ summary(d)
 What have you learned?  Are there any broader implications?
 
 # References
-
