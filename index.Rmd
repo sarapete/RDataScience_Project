@@ -13,7 +13,7 @@ Homeless individuals are among the most marginalized populations of society. Hom
 
 Load any required packages in a code chunk (you may need to install some packages):
   
-```{r, message=F, warning=F}
+```{r}
 library(zipcode)
 library(readxl)
 library(readr)
