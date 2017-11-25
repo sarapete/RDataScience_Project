@@ -5,107 +5,116 @@ subtitle: null
 ---
 
 # Introduction
-Homeless individuals are among the most marginalized populations of society. Homeless populations are further marginalized in data collection and representation. Even efforts specifically intended to record homeless data can inadvertently further marginalize certain groups of homeless individuals, as seen in an anonymized data set of homeless shelter visits in Erie County in 2015, provided by the Homeless Alliance of WNY. Previous research found that there were data issues in this official data set, as zip codes that were viewed as “incomplete” were thrown out of the official data set. This led to migrants from particular places being omitted from data analysis and official reports. Those individuals ignored in official reports includes 46 individuals who moved from Puerto Rico before becoming homeless in Erie County. This project uses R to visually represent this phenomenon of individuals moving from Puerto Rico before becoming homeless in Western New York. It maps the origins of these individuals and visually represents migration as movement along great circle lines.
+Homeless individuals are among the most marginalized populations of society. Homeless populations are further marginalized in data collection and representation. Even efforts specifically intended to record homeless data can inadvertently further marginalize certain groups of homeless individuals; entries with zip codes that were viewed as "incomplete" were taken out of an official 2015 data set used by the Homelessness Alliance of Western New York. This led to migrants from particular places being omitted from data analysis and official reports. Those individuals ignored in official reports includes 46 individuals who moved from Puerto Rico before becoming homeless in Erie County. This project seeks to understand and represent where people are coming from before becoming homeless in Western New York, using R to map the origins of these individuals and visually represents migration as movement along great circle lines. It specifically explores the phenomenon of individuals moving from Puerto Rico before becoming homeless in Western New York. 
 
 
 
 # Materials and methods
 
-Narrative and most code will go here.  Describe what you are doing and show how to do it (with code).
-
-You can do bullets like this:
-
-* The first most important thing
-* The second most important thing
-* The third most important thing
-
-You can do numbers like this:
-
-1. The first most important thing
-2. The second most important thing
-3. The third most important thing
-
-See [http://rmarkdown.rstudio.com/](http://rmarkdown.rstudio.com/) for all the amazing things you can do.
-
-
 Load any required packages in a code chunk (you may need to install some packages):
-
-```{r, message=F, warning=F}
+  
+  ```{r, message=F, warning=F}
 library(zipcode)
 library(readxl)
+library(readr)
+library(purrr)
+library(raster)
 library(rgeos)
 library(dplyr)
 library(tidyverse)
+library(tidycensus)
 library(maps)
 library(ggmap)
 library(choroplethr)
 library(USAboundaries)
+library(noncensus)
 library(tigris)
+library(viridis)
 library(sf)
 library(geosphere)
 library(RColorBrewer)
+library(acs)
 library(maptools)
-library(ggplot2)
 
 knitr::opts_chunk$set(cache=TRUE)  # cache the results for quick compiling
 ```
 
-
-
-
 Read in the anonymized data set provided by the Western New York Homeless Alliance
-
 ```{r}
 Buffalo_Shelter_Data <- read_csv("~/Desktop/Adam's Class/*final project/Buffalo Shelter Data (original).csv")
 ```
 
-Use the zipcode package to clean the zipcodes in the Buffalo Shelter Data CSV
+Use the zipcode package to clean the zipcodes in the Buffalo Shelter Data CSV. This fixes the entries with "incomplete" zip codes that were thrown out of the data set so that they are useable.
 ```{r}
 clean.zipcodes(Buffalo_Shelter_Data)
 ```
 
 
 
-Use the zipcode package to create a data frame with the zipcodes for Puerto Rico. Rename the column heads so that they can later be more easily joined to the Buffalo Shelter Data
+Use the zipcode package to create two data frames: one with the zipcodes for all of the United States, and other with zipcodes just for Puerto Rico. Rename the column heads so that they can later be more easily joined to the Buffalo Shelter Data.
 ```{r}
-## the final output from this section of code isn't ready to go yet, but it will be used to generate a map in future iterations of the project
-
 data("zipcode")
 names<-c("Zip","City","State","Latitude","Longitude")
 colnames(zipcode, do.NULL = TRUE, prefix = "col")
 colnames(zipcode)<-names
+USdataframe=zipcode
+##USdataframe is the data frame with zip codes for all of the United States. You can filter to only have Puerto Rico
+
 PRdataframe<-filter(zipcode,State=="PR")
 PRdataframe
+##PRdata frame is the data frame with zip codes for just Puerto Rico
 ```
 
 
 
-Use the tigris package to download the physical boundaries for Puerto Rico zip codes and convert to sf
+Use the tigris package to download the physical boundaries for all United States zip codes and convert to sf. Create an sf object for all United States zip codes, then filter to create an sf object for only Puerto Rico zip codes
 ```{r}
 #run the following line of code only once to download the boundary data -- it may take awhile
 #zips<-zctas(cb = FALSE, starts_with = NULL, year = 2010, state = NULL)
-#use the following line of code to 
 options(tigris_use_cache = TRUE)
+USzips<-zctas(cb = FALSE, starts_with = NULL, year = 2010)%>%
+  st_as_sf()
+##USzips is the sf object with the physical boundaries for all US zip codes
+
 PRzips<-zctas(cb = FALSE, starts_with = NULL, year = 2010, state = "PR")%>%
   st_as_sf()
-PRzips
+##PRzips is the sf object with the physical boundaries for PR zip codes
 ```
 
 
-Join the Buffalo Shelter Data and the PRdataframe by zip code, then assign coordinates using "Longitude" and "Latitude". You can now plot the general location of where homeless people were coming from based on the controid coordinates of their zip code origin.
+Join the Buffalo Shelter Data and the USdataframe by zip code, then assign coordinates using "Longitude" and "Latitude". You can now plot the general location of where across the United States homeless people were coming from based on the controid coordinates of their zip code origin.
+```{r}
+BufDataLL_US<-inner_join(Buffalo_Shelter_Data, USdataframe, by= "Zip")
+coordinates(BufDataLL_US)<-c("Longitude","Latitude")
+#View(BufDataLL_US)
+```
+
+Complete the same process with the PRdata frame: Join the Buffalo Shelter Data and the PRdataframe by zip code, then assign coordinates using "Longitude" and "Latitude". You can now plot the general location of where within Puerto Rico homeless people were coming from based on the controid coordinates of their zip code origin.
 ```{r}
 BufDataLL<-inner_join(Buffalo_Shelter_Data, PRdataframe, by= "Zip")
 coordinates(BufDataLL)<-c("Longitude","Latitude")
 #View(BufDataLL)
-#plot(BufDataLL)
-
+#Plot(BufDataLL)
 ```
 
 
+Summarize the data by the count of individuals coming from each of the different zip codes in the United States
+```{r}
+count_in_zips_US<-inner_join(Buffalo_Shelter_Data, USzips, by= c("Zip" = "ZCTA5CE10"))%>%group_by(Zip)%>%summarise(n=n())
+#count_in_zips_US
+count_in_zips_points_US<-left_join(count_in_zips_US,USdataframe,by= "Zip")
+coordinates(count_in_zips_points_US)<-c("Longitude","Latitude")
+st_as_sf(count_in_zips_points_US)
+#View(count_in_zips_points_US)
+#plot(count_in_zips_points_US)
+
+count_in_zips_polygons_US<-inner_join(Buffalo_Shelter_Data, USzips, by= c("Zip" = "ZCTA5CE10"))%>%st_as_sf()%>%group_by(Zip)%>%summarise(n=n())
+#View(count_in_zips_polygons_US)
+#plot(count_in_zips_polygons_US)
+```
 
 
-
-Summarize the data by the count of individuals coming from each of the different zip codes.
+Summarize the data by the count of individuals coming from each of the different zip codes in Puerto Rico.
 ```{r}
 #create count_in_zips, which is an inner join of the Buffalo Shelter Data and the PRzips sf object, then group by zip code and summarize
 count_in_zips<-inner_join(Buffalo_Shelter_Data, PRzips, by= c("Zip" = "ZCTA5CE10"))%>%group_by(Zip)%>%summarise(n=n())
@@ -115,9 +124,8 @@ count_in_zips<-inner_join(Buffalo_Shelter_Data, PRzips, by= c("Zip" = "ZCTA5CE10
 count_in_zips_points<-left_join(count_in_zips,PRdataframe,by= "Zip")
 #set the coordinates
 coordinates(count_in_zips_points)<-c("Longitude","Latitude")
-#set as sf
 st_as_sf(count_in_zips_points)
-#plot 
+#head(count_in_zips_points)
 #plot(count_in_zips_points)
 
 #create count_in_zips_polygons, which is the count_in_zips dataframe set as a sf
@@ -128,77 +136,43 @@ count_in_zips_polygons<-inner_join(Buffalo_Shelter_Data, PRzips, by= c("Zip" = "
 ```
 
 
+Use the tidycensus package to get the household income data from the US Census Bureau (census.gov). We will download the income data for each zip code (table B19001_001E is the average household income in the past 12 months)
+```{r}
+IncomeZipCodeData <-get_acs(geography = "zcta", variables = "B19001_001E")
+#View(IncomeZipCodeData)
+```
+
+Join IncomeZipCodeData with PRzips to make PR zips income file
+```{r}
+PRzipsIncome<-left_join(IncomeZipCodeData, PRzips, by= c("GEOID" = "ZCTA5CE10"))
+
+#head(PRzipsIncome)
+```
 
 
 # Results
 
-Map of the Puerto Rico zip code boundaries using ggplot
+
+Map of locations across the United States are people originate from before becoming homeless in Western New York
 ```{r}
-##map of boundaries
-ggplot(PRzips)+
-  geom_sf(lwd=0.2,fill="#f0f0f0")
-```
-
-Choropleth map of density (number of people coming to Buffalo from each Puerto Rican zip code)
-```{r}
-###choropleth map of density
-ggplot(PRzips)+
-  geom_sf(lwd=0.2,fill="#f0f0f0")+
-  geom_sf(data=count_in_zips_polygons, aes(fill = n)) +
-  scale_fill_gradient(low = "yellow", high = "red")
-```
-
-
-
-Map of centroid dots of location of origin; color indicating number coming from that place
-```{r}
-#create points as data frame to use in ggplot
-points <- data.frame(count_in_zips_points)
-
-#plot
-ggplot(PRzips)+
-  geom_sf(lwd=0.2,fill="#f0f0f0")+
-  geom_point(data=points, aes(x=Longitude, y=Latitude, colour=n))+
-  scale_colour_gradient(low = "yellow", high = "red")
-```
-
-
-Map of centroid dots of location of origin; size indicating number coming from that place
-```{r}
-##map of dots, sized by number
-ggplot(PRzips)+
-  geom_sf(lwd=0.2,fill="#f0f0f0")+
-  geom_point(data=points, aes(x=Longitude, y=Latitude, size=n, alpha=.5))
-
-```
-
-
-Map of migration to Buffalo along great circle lines, weighted by the number of people coming from each place (darker = more people)
-```{r}
-
-xlim <- c(-140, -55.5)
+points_in_US<- data.frame(count_in_zips_points_US)
+xlim <- c(-160, -55.5)
 ylim <- c(12, 50)
 BuffaloCoordinates=as.matrix(geocode("Buffalo, NY"))
-
-pal <- colorRampPalette(c("#f2f2f2", "black"))
-colors <- pal(100)
-
 map("world", col="#f1f1f1", fill=TRUE, bg="white", lwd=0.2, xlim=xlim, ylim=ylim)
-for (j in 1:length(points$n)) {
-  inter <- gcIntermediate(c(points[j,]$Longitude, points[j,]$Latitude), BuffaloCoordinates, n=100, addStartEnd=TRUE)
+for (j in 1:length(points_in_US$n)) {
+  inter <- gcIntermediate(c(points_in_US[j,]$Longitude, points_in_US[j,]$Latitude), BuffaloCoordinates, n=100, addStartEnd=TRUE)
   
-  colindex <- round( (points[j,]$n / 7) * length(colors) )
-
-lines(inter, col=colors[colindex], lwd=0.8)
+  lines(inter, col="black", lwd=0.8)
 }
 ```
 
 
+As we can see, there are a number of lines originating in Puerto Rico. The next section will specifically explore the phenomenon of people coming from Puerto Rico before becoming homeless in Western New York...
 
-Zoomed-in map of migration to Buffalo along great circle lines, weighted by the number from each place (darker = more people)
-
+Zoomed-in map of migration to Buffalo from Puerto Rico along great circle lines, weighted by the number from each place (darker = more people)
 ```{r}
-
+points <- data.frame(count_in_zips_points)
 xlim <- c(-90, -60)
 ylim <- c(18, 45)
 BuffaloCoordinates=as.matrix(geocode("Buffalo, NY"))
@@ -216,8 +190,61 @@ for (j in 1:length(points$n)) {
 }
 ```
 
+
+
+
+Choropleth map of density (number of people coming to Buffalo from each Puerto Rican zip code)
+```{r}
+###choropleth map of density
+ggplot(PRzips)+
+  geom_sf(lwd=0.2,fill="#f0f0f0")+
+  geom_sf(data=count_in_zips_polygons, aes(fill = n), col="transparent") +
+  scale_fill_gradient(low = "yellow", high = "red")
+```
+
+
+Map of centroid dots of location of origin; color and size indicate the number coming from that place
+```{r}
+#create points as data frame to use in ggplot
+points <- data.frame(count_in_zips_points)
+
+
+#plot
+ggplot(PRzips)+
+  geom_sf(lwd=0.2,fill="#f0f0f0")+
+  geom_point(data=points, colour="red", alpha=.7, aes(x=Longitude, y=Latitude, size=n))
+```
+
+
+
+For fun, lets explore income of Puerto Rico by zip code.
+```{r}
+ggplot(PRzipsIncome)+
+geom_sf(data=PRzipsIncome, aes(fill = estimate), col="transparent") +
+scale_fill_gradient(low = "white", high = "dark green")
+```
+
+
+This can then be overlaid with the number of people coming from each zip code.
+```{r}
+ggplot(PRzipsIncome)+
+geom_sf(data=PRzipsIncome, aes(fill = estimate),col="transparent") +
+scale_fill_gradient(low = "white", high = "dark green")+
+geom_point(data=points, aes(x=Longitude, y=Latitude, size=n),col="black")+
+scale_size(limits = NULL, range = c(1, 3), breaks=c(1,3,7), trans = "identity", guide = "legend")
+```
+
+
+
+
 # Conclusions
 
-What have you learned?  Are there any broader implications?
+Looking at the final map, which overlays the number of individuals from Puerto Rican zip codes with the average household income of the zip code, I was surprised to see that there does not seem to be a strong relationship between income and the number of individuals orginating from that zip code. The total sample size of people coming from Puerto Rico was too small to run any kind of meaningful statistical regression, but a visual examination shows that the zip codes of origin were not necessarily the ones with the lowest average annual incomedata.
+
+On a broader scale, this project has successfully shown where people are coming from before becoming homeless in Western New York. My experience in developing this project has also demonstrated how easy it might be to use R to visualize migration data and the origins of homeless individuals. My ultimate hope is to compare this current data set with similar data sets from other Rust Belt cities, including Cleveland, OH, and Pittsburgh, PA to see if the phenomenon of homeless individuals originating in Puerto Rico extends beyond Buffalo and the Western New York region. This project will be an invaluable tool, as the code for this project could easily be run with other data sets substituted for the Buffalo Shelter Data.
+
+
 
 # References
+The homelessness data set used in this project was generously provided by The Homelessness Alliance of Western New York
+The zip code income data was downloaded from the US Census Bureau (census.gov)
