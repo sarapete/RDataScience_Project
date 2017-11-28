@@ -13,7 +13,7 @@ Homeless individuals are among the most marginalized populations of society. Hom
 
 Load any required packages in a code chunk (you may need to install some packages):
   
-```{r}
+```{r, message=F, results=F, warning=F}
 library(zipcode)
 library(readxl)
 library(readr)
@@ -154,7 +154,7 @@ PRzipsIncome<-left_join(IncomeZipCodeData, PRzips, by= c("GEOID" = "ZCTA5CE10"))
 
 
 Map of locations across the United States are people originate from before becoming homeless in Western New York
-```{r}
+```{r, message=F}
 points_in_US<- data.frame(count_in_zips_points_US)
 xlim <- c(-160, -55.5)
 ylim <- c(12, 50)
@@ -169,6 +169,7 @@ for (j in 1:length(points_in_US$n)) {
 
 
 As we can see, there are a number of lines originating in Puerto Rico. The next section will specifically explore the phenomenon of people coming from Puerto Rico before becoming homeless in Western New York...
+
 
 Zoomed-in map of migration to Buffalo from Puerto Rico along great circle lines, weighted by the number from each place (darker = more people)
 ```{r}
@@ -204,7 +205,7 @@ ggplot(PRzips)+
 
 
 Map of centroid dots of location of origin; color and size indicate the number coming from that place
-```{r}
+```{r, message=F}
 #create points as data frame to use in ggplot
 points <- data.frame(count_in_zips_points)
 
@@ -218,7 +219,7 @@ ggplot(PRzips)+
 
 
 For fun, lets explore income of Puerto Rico by zip code.
-```{r}
+```{r, message=F, warning=F}
 ggplot(PRzipsIncome)+
 geom_sf(data=PRzipsIncome, aes(fill = estimate), col="transparent") +
 scale_fill_gradient(low = "white", high = "dark green")
@@ -226,7 +227,7 @@ scale_fill_gradient(low = "white", high = "dark green")
 
 
 This can then be overlaid with the number of people coming from each zip code.
-```{r}
+```{r, warning=F}
 ggplot(PRzipsIncome)+
 geom_sf(data=PRzipsIncome, aes(fill = estimate),col="transparent") +
 scale_fill_gradient(low = "white", high = "dark green")+
