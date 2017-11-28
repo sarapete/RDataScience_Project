@@ -61,7 +61,7 @@ USdataframe=zipcode
 ##USdataframe is the data frame with zip codes for all of the United States. You can filter to only have Puerto Rico
 
 PRdataframe<-filter(zipcode,State=="PR")
-PRdataframe
+head(PRdataframe)
 ##PRdata frame is the data frame with zip codes for just Puerto Rico
 ```
 
