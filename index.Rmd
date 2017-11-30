@@ -261,5 +261,6 @@ On a broader scale, this project has successfully shown where people are coming 
 
 
 # References
-The homelessness data set used in this project was generously provided by The Homelessness Alliance of Western New York
-The zip code income data was downloaded from the US Census Bureau (census.gov)
+* The homelessness data set used in this project was generously provided by The Homelessness Alliance of Western New York
+* The zip code polygons and the zip code income data were downloaded from the US Census Bureau (census.gov)
+
