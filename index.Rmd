@@ -209,7 +209,8 @@ Choropleth map of density (number of people coming to Buffalo from each Puerto R
 ggplot(PRzips)+
   geom_sf(lwd=0.2,fill="#f0f0f0")+
   geom_sf(data=count_in_zips_polygons, aes(fill = n), col="transparent") +
-  scale_fill_gradient(low = "yellow", high = "red")
+  scale_fill_gradient(low = "yellow", high = "red")+
+  labs(fill="Number People")
 ```
 
 
@@ -222,7 +223,8 @@ points <- data.frame(count_in_zips_points)
 #plot
 ggplot(PRzips)+
   geom_sf(lwd=0.2,fill="#f0f0f0")+
-  geom_point(data=points, colour="red", alpha=.7, aes(x=Longitude, y=Latitude, size=n))
+  geom_point(data=points, colour="red", alpha=.7, aes(x=Longitude, y=Latitude, size=n))+
+  labs(size="Number People")
 ```
 
 
@@ -231,7 +233,8 @@ For fun, lets explore income of Puerto Rico by zip code.
 ```{r, message=F, warning=F}
 ggplot(PRzipsIncome)+
 geom_sf(data=PRzipsIncome, aes(fill = estimate), col="transparent") +
-scale_fill_gradient(low = "white", high = "dark green")
+scale_fill_gradient(low = "white", high = "dark green")+
+labs(fill="Estimated Average Income ($)")
 ```
 
 
@@ -240,8 +243,10 @@ This can then be overlaid with the number of people coming from each zip code.
 ggplot(PRzipsIncome)+
 geom_sf(data=PRzipsIncome, aes(fill = estimate),col="transparent") +
 scale_fill_gradient(low = "white", high = "dark green")+
+  labs(fill="Estimated Average Income ($)")+
 geom_point(data=points, aes(x=Longitude, y=Latitude, size=n),col="black")+
-scale_size(limits = NULL, range = c(1, 3), breaks=c(1,3,7), trans = "identity", guide = "legend")
+scale_size(limits = NULL, range = c(1, 3), breaks=c(1,3,7), trans = "identity", guide = "legend")+
+labs(size="Number People")
 ```
 
 

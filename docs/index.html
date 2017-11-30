@@ -544,7 +544,8 @@ for (j in 1:length(points$n)) {
 ggplot(PRzips)+
   geom_sf(lwd=0.2,fill=&quot;#f0f0f0&quot;)+
   geom_sf(data=count_in_zips_polygons, aes(fill = n), col=&quot;transparent&quot;) +
-  scale_fill_gradient(low = &quot;yellow&quot;, high = &quot;red&quot;)</code></pre>
+  scale_fill_gradient(low = &quot;yellow&quot;, high = &quot;red&quot;)+
+  labs(fill=&quot;Number People&quot;)</code></pre>
 <p><img src="index_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
 <p>Map of centroid dots of location of origin; color and size indicate the number coming from that place</p>
 <pre class="r"><code>#create points as data frame to use in ggplot
@@ -554,7 +555,8 @@ points &lt;- data.frame(count_in_zips_points)
 #plot
 ggplot(PRzips)+
   geom_sf(lwd=0.2,fill=&quot;#f0f0f0&quot;)+
-  geom_point(data=points, colour=&quot;red&quot;, alpha=.7, aes(x=Longitude, y=Latitude, size=n))</code></pre>
+  geom_point(data=points, colour=&quot;red&quot;, alpha=.7, aes(x=Longitude, y=Latitude, size=n))+
+  labs(size=&quot;Number People&quot;)</code></pre>
 <p><img src="index_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
 </div>
 <div id="thinking-about-income" class="section level4">
@@ -562,14 +564,17 @@ ggplot(PRzips)+
 <p>For fun, lets explore income of Puerto Rico by zip code.</p>
 <pre class="r"><code>ggplot(PRzipsIncome)+
 geom_sf(data=PRzipsIncome, aes(fill = estimate), col=&quot;transparent&quot;) +
-scale_fill_gradient(low = &quot;white&quot;, high = &quot;dark green&quot;)</code></pre>
+scale_fill_gradient(low = &quot;white&quot;, high = &quot;dark green&quot;)+
+labs(fill=&quot;Estimated Average Income ($)&quot;)</code></pre>
 <p><img src="index_files/figure-html/unnamed-chunk-16-1.png" width="672" /></p>
 <p>This can then be overlaid with the number of people coming from each zip code.</p>
 <pre class="r"><code>ggplot(PRzipsIncome)+
 geom_sf(data=PRzipsIncome, aes(fill = estimate),col=&quot;transparent&quot;) +
 scale_fill_gradient(low = &quot;white&quot;, high = &quot;dark green&quot;)+
+  labs(fill=&quot;Estimated Average Income ($)&quot;)+
 geom_point(data=points, aes(x=Longitude, y=Latitude, size=n),col=&quot;black&quot;)+
-scale_size(limits = NULL, range = c(1, 3), breaks=c(1,3,7), trans = &quot;identity&quot;, guide = &quot;legend&quot;)</code></pre>
+scale_size(limits = NULL, range = c(1, 3), breaks=c(1,3,7), trans = &quot;identity&quot;, guide = &quot;legend&quot;)+
+labs(size=&quot;Number People&quot;)</code></pre>
 <p><img src="index_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
 </div>
 </div>
