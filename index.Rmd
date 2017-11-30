@@ -15,26 +15,20 @@ Load any required packages in a code chunk (you may need to install some package
   
 ```{r, message=F, results=F, warning=F}
 library(zipcode)
-library(readxl)
 library(readr)
-library(purrr)
 library(raster)
-library(rgeos)
 library(dplyr)
 library(tidyverse)
 library(tidycensus)
 library(maps)
 library(ggmap)
-library(choroplethr)
 library(USAboundaries)
 library(noncensus)
 library(tigris)
-library(viridis)
 library(sf)
 library(geosphere)
 library(RColorBrewer)
 library(acs)
-library(maptools)
 
 knitr::opts_chunk$set(cache=TRUE)  # cache the results for quick compiling
 ```
@@ -68,7 +62,7 @@ head(PRdataframe)
 
 
 Use the tigris package to download the physical boundaries for all United States zip codes and convert to sf. Create an sf object for all United States zip codes, then filter to create an sf object for only Puerto Rico zip codes
-```{r}
+```{r, message=F}
 #run the following line of code only once to download the boundary data -- it may take awhile
 #zips<-zctas(cb = FALSE, starts_with = NULL, year = 2010, state = NULL)
 options(tigris_use_cache = TRUE)
@@ -99,7 +93,7 @@ coordinates(BufDataLL)<-c("Longitude","Latitude")
 
 
 Summarize the data by the count of individuals coming from each of the different zip codes in the United States
-```{r}
+```{r, message=F}
 count_in_zips_US<-inner_join(Buffalo_Shelter_Data, USzips, by= c("Zip" = "ZCTA5CE10"))%>%group_by(Zip)%>%summarise(n=n())
 #count_in_zips_US
 count_in_zips_points_US<-left_join(count_in_zips_US,USdataframe,by= "Zip")
