@@ -177,7 +177,7 @@ $(document).ready(function ()  {
 
     // establish options
     var options = {
-      selectors: "h1,h2",
+      selectors: "h1,h2,h3,h4",
       theme: "bootstrap3",
       context: '.toc-content',
       hashGenerator: function (text) {
@@ -330,7 +330,7 @@ knitr::opts_chunk$set(cache=TRUE)  # cache the results for quick compiling</code
 </div>
 <div id="load-buffalo-data-set" class="section level3">
 <h3>Load Buffalo Data Set</h3>
-<p>Read in the anonymized data set provided by the Western New York Homeless Alliance</p>
+<p>Read in the anonymized data set provided by the Western New York Homeless Alliance (due to the sensitive nature of this file, it is stored locally on my own computer and will not be able to be downloaded)</p>
 <pre class="r"><code>Buffalo_Shelter_Data &lt;- read_csv(&quot;~/Desktop/Adam&#39;s Class/*final project/Buffalo Shelter Data (original).csv&quot;)</code></pre>
 <pre><code>## Parsed with column specification:
 ## cols(
@@ -351,142 +351,92 @@ knitr::opts_chunk$set(cache=TRUE)  # cache the results for quick compiling</code
 </div>
 <div id="zip-code-data-frames" class="section level3">
 <h3>Zip Code Data Frames</h3>
-<p>Use the zipcode package to create two data frames: one with the zipcodes for all of the United States, and other with zipcodes just for Puerto Rico. Rename the column heads so that they can later be more easily joined to the Buffalo Shelter Data.</p>
-<pre class="r"><code>data(&quot;zipcode&quot;)
+<p>Use the zipcode package to create two data frames: one with the zipcodes for all of the United States, and other with zipcodes just for Puerto Rico. Rename the column heads so that they can later be more easily joined to the Buffalo Shelter Data to create points marking the origin of individuals who become homeless in Buffalo</p>
+<pre class="r"><code>#download the zip code data for the whole of the United States
+data(&quot;zipcode&quot;)
+
+#rename the head
 names&lt;-c(&quot;Zip&quot;,&quot;City&quot;,&quot;State&quot;,&quot;Latitude&quot;,&quot;Longitude&quot;)
-colnames(zipcode, do.NULL = TRUE, prefix = &quot;col&quot;)</code></pre>
-<pre><code>## [1] &quot;zip&quot;       &quot;city&quot;      &quot;state&quot;     &quot;latitude&quot;  &quot;longitude&quot;</code></pre>
-<pre class="r"><code>colnames(zipcode)&lt;-names
+colnames(zipcode, do.NULL = TRUE, prefix = &quot;col&quot;)
+colnames(zipcode)&lt;-names
+
+#rename
 USdataframe=zipcode
 ##USdataframe is the data frame with zip codes for all of the United States. You can filter to only have Puerto Rico
 
 PRdataframe&lt;-filter(zipcode,State==&quot;PR&quot;)
+##PRdata frame is the data frame with zip codes for just Puerto Rico
 head(PRdataframe)</code></pre>
-<pre><code>##     Zip      City State Latitude Longitude
-## 1 00601  Adjuntas    PR 18.18010 -66.74947
-## 2 00602    Aguada    PR 18.36329 -67.18024
-## 3 00603 Aguadilla    PR 18.44862 -67.13422
-## 4 00604 Aguadilla    PR 18.49899 -67.13699
-## 5 00605 Aguadilla    PR 18.46516 -67.14149
-## 6 00606   Maricao    PR 18.18215 -66.95880</code></pre>
-<pre class="r"><code>##PRdata frame is the data frame with zip codes for just Puerto Rico</code></pre>
 </div>
 <div id="zip-code-boundaries" class="section level3">
 <h3>Zip Code Boundaries</h3>
-<p>Use the tigris package to download the physical boundaries for all United States zip codes and convert to sf. Create an sf object for all United States zip codes, then filter to create an sf object for only Puerto Rico zip codes</p>
+<p>Use the tigris package to download the physical boundaries for all zip codes in Puerto Rico and convert to sf. This will be used later to create choropleth maps of Puerto Rico. <em>Note: this process could be done for the whole of the United States simply by leaving the ‘state=“PR”’ section out of the code, but the focus of the project is the migration specifically from Puerto Rico and we will not be creating a choropleth map of the whole of the United States</em></p>
 <pre class="r"><code>#run the following line of code only once to download the boundary data -- it may take awhile
-#zips&lt;-zctas(cb = FALSE, starts_with = NULL, year = 2010, state = NULL)
 options(tigris_use_cache = TRUE)
-USzips&lt;-zctas(cb = FALSE, starts_with = NULL, year = 2010)%&gt;%
-  st_as_sf()
-##USzips is the sf object with the physical boundaries for all US zip codes
-
 PRzips&lt;-zctas(cb = FALSE, starts_with = NULL, year = 2010, state = &quot;PR&quot;)%&gt;%
   st_as_sf()
 ##PRzips is the sf object with the physical boundaries for PR zip codes</code></pre>
 </div>
 <div id="geocoding-buffalo-shelter-data" class="section level3">
 <h3>Geocoding Buffalo Shelter Data</h3>
-<p>Join the Buffalo Shelter Data and the USdataframe by zip code, then use the sp package to assign coordinates using “Longitude” and “Latitude”. You can now plot the general location of where across the United States homeless people were coming from based on the centroid coordinates of their zip code origin.</p>
+<p>Join the Buffalo Shelter Data and the USdataframe by zip code, then use the sp package to assign coordinates using “Longitude” and “Latitude”. You can now plot the general location of where across the United States homeless people were coming from based on the centroid coordinates of their zip code origin. <em>Note: multiple people originating from the same zip code would be visualized as a single point</em></p>
 <pre class="r"><code>BufDataLL_US&lt;-inner_join(Buffalo_Shelter_Data, USdataframe, by= &quot;Zip&quot;)
 coordinates(BufDataLL_US)&lt;-c(&quot;Longitude&quot;,&quot;Latitude&quot;)
-#View(BufDataLL_US)</code></pre>
+#plot(BufDataLL_US)</code></pre>
 <p>Complete the same process with the PRdata frame: Join the Buffalo Shelter Data and the PRdataframe by zip code, then use the sp package to assign coordinates using “Longitude” and “Latitude”. You can now plot the general location of where within Puerto Rico homeless people were coming from based on the centroid coordinates of their zip code origin.</p>
 <pre class="r"><code>BufDataLL&lt;-inner_join(Buffalo_Shelter_Data, PRdataframe, by= &quot;Zip&quot;)
 coordinates(BufDataLL)&lt;-c(&quot;Longitude&quot;,&quot;Latitude&quot;)
-#View(BufDataLL)
 #Plot(BufDataLL)</code></pre>
 </div>
 <div id="summarizing-the-total-counts-from-each-zip-code" class="section level3">
 <h3>Summarizing the total counts from each zip code</h3>
 <div id="summarizing-from-origin-in-all-of-the-united-states" class="section level4">
 <h4>Summarizing from origin in all of the United States</h4>
-<p>Summarize the data by the count of individuals coming from each of the different zip codes in the United States. You will create both centroid points and polygons with counts of individuals coming from each zip code.</p>
+<p>Summarize the data by the count of individuals coming from each of the different zip codes in the United States. You will create centroid points of the zip codes that now have an “n” value of the number of people coming from each given zip code.</p>
+<div id="us-origins-represented-as-centroid-points" class="section level5">
+<h5>US origins represented as centroid points</h5>
 <pre class="r"><code>#Join the Buffalo Shelter Data to the US zip code data
-count_in_zips_US&lt;-inner_join(Buffalo_Shelter_Data, USzips, by= c(&quot;Zip&quot; = &quot;ZCTA5CE10&quot;))%&gt;%group_by(Zip)%&gt;%summarise(n=n())
-#count_in_zips_US
+count_in_zips_US&lt;-inner_join(Buffalo_Shelter_Data, USdataframe, by= &quot;Zip&quot;)%&gt;%group_by(Zip)%&gt;%summarise(n=n())
 
-#join the newly created data frame to the USdata frame to get the coodinates of the zip codes
+#join the newly created data frame with the number of individuals coming from each zip code back to the to the USdataframe to get the coodinates of the zip codes
 count_in_zips_points_US&lt;-left_join(count_in_zips_US,USdataframe,by= &quot;Zip&quot;)
 
 #set the coordinates for the centroid points
 coordinates(count_in_zips_points_US)&lt;-c(&quot;Longitude&quot;,&quot;Latitude&quot;)
 
 #convert to sf
-st_as_sf(count_in_zips_points_US)</code></pre>
-<pre><code>## Simple feature collection with 416 features and 4 fields
-## geometry type:  POINT
-## dimension:      XY
-## bbox:           xmin: -158.0354 ymin: 18.09281 xmax: -65.65987 ymax: 48.09714
-## epsg (SRID):    NA
-## proj4string:    NA
-## # A tibble: 416 x 5
-##      Zip     n        City State          geometry
-##    &lt;chr&gt; &lt;int&gt;       &lt;chr&gt; &lt;chr&gt;  &lt;simple_feature&gt;
-##  1 00610     2      Anasco    PR &lt;POINT (-67.1...&gt;
-##  2 00676     2        Moca    PR &lt;POINT (-67.0...&gt;
-##  3 00683     1  San German    PR &lt;POINT (-67.0...&gt;
-##  4 00720     5    Orocovis    PR &lt;POINT (-66.4...&gt;
-##  5 00735     3       Ceiba    PR &lt;POINT (-65.6...&gt;
-##  6 00771     4 Las Piedras    PR &lt;POINT (-65.8...&gt;
-##  7 00772     4       Loiza    PR &lt;POINT (-65.8...&gt;
-##  8 00791     6     Humacao    PR &lt;POINT (-65.8...&gt;
-##  9 00907     5    San Juan    PR &lt;POINT (-66.0...&gt;
-## 10 00924     7    San Juan    PR &lt;POINT (-66.0...&gt;
-## # ... with 406 more rows</code></pre>
-<pre class="r"><code>#plot(count_in_zips_points_US)
+st_as_sf(count_in_zips_points_US)
 
-
-#join the Buffalo Shelter Data to the USzips polygon to create polygons with counts of the number of individuals coming from each zip code
-count_in_zips_polygons_US&lt;-inner_join(Buffalo_Shelter_Data, USzips, by= c(&quot;Zip&quot; = &quot;ZCTA5CE10&quot;))%&gt;%st_as_sf()%&gt;%group_by(Zip)%&gt;%summarise(n=n())
-#plot(count_in_zips_polygons_US)</code></pre>
+#plot(count_in_zips_points_US)</code></pre>
+</div>
 </div>
 <div id="summarizing-from-origin-only-in-puerto-rico" class="section level4">
 <h4>Summarizing from origin only in Puerto Rico</h4>
-<p>Summarize the data by the count of individuals coming from each of the different zip codes in Puerto Rico. You will create both centroid points and polygons with counts of individuals coming from each zip code.</p>
+<p>Summarize the data by the count of individuals coming from each of the different zip codes in Puerto Rico. You will create both centroid points and polygons with counts of individuals coming from each zip code for the Puerto Rico data.</p>
+</div>
+<div id="puerto-rico-data-represented-as-centroid-points" class="section level4">
+<h4><em>Puerto Rico data represented as centroid points</em></h4>
 <pre class="r"><code>#Join the Buffalo Shelter Data to the Puerto Rico zip code data
 count_in_zips&lt;-inner_join(Buffalo_Shelter_Data, PRzips, by= c(&quot;Zip&quot; = &quot;ZCTA5CE10&quot;))%&gt;%group_by(Zip)%&gt;%summarise(n=n())
-#count_in_zips
 
 #create count_in_zips_points, which is a left join of the count_in_zips data frame that you just created and the PRdataframe that has the locations of the zip codes
 count_in_zips_points&lt;-left_join(count_in_zips,PRdataframe,by= &quot;Zip&quot;)
 
 #set the coordinates
 coordinates(count_in_zips_points)&lt;-c(&quot;Longitude&quot;,&quot;Latitude&quot;)
-st_as_sf(count_in_zips_points)</code></pre>
-<pre><code>## Simple feature collection with 14 features and 4 fields
-## geometry type:  POINT
-## dimension:      XY
-## bbox:           xmin: -67.13604 ymin: 18.09281 xmax: -65.65987 ymax: 18.45113
-## epsg (SRID):    NA
-## proj4string:    NA
-## # A tibble: 14 x 5
-##      Zip     n          City State          geometry
-##    &lt;chr&gt; &lt;int&gt;         &lt;chr&gt; &lt;chr&gt;  &lt;simple_feature&gt;
-##  1 00610     2        Anasco    PR &lt;POINT (-67.1...&gt;
-##  2 00676     2          Moca    PR &lt;POINT (-67.0...&gt;
-##  3 00683     1    San German    PR &lt;POINT (-67.0...&gt;
-##  4 00720     5      Orocovis    PR &lt;POINT (-66.4...&gt;
-##  5 00735     3         Ceiba    PR &lt;POINT (-65.6...&gt;
-##  6 00771     4   Las Piedras    PR &lt;POINT (-65.8...&gt;
-##  7 00772     4         Loiza    PR &lt;POINT (-65.8...&gt;
-##  8 00791     6       Humacao    PR &lt;POINT (-65.8...&gt;
-##  9 00907     5      San Juan    PR &lt;POINT (-66.0...&gt;
-## 10 00924     7      San Juan    PR &lt;POINT (-66.0...&gt;
-## 11 00926     1      San Juan    PR &lt;POINT (-66.0...&gt;
-## 12 00962     2        Catano    PR &lt;POINT (-66.1...&gt;
-## 13 00976     1 Trujillo Alto    PR &lt;POINT (-66.0...&gt;
-## 14 00983     7      Carolina    PR &lt;POINT (-65.9...&gt;</code></pre>
-<pre class="r"><code>#plot(count_in_zips_points)
-
-#create count_in_zips_polygons, which is the count_in_zips dataframe set as a sf to create polygons with the counts of people coming from each zip code in Puerto Rico
+st_as_sf(count_in_zips_points)
+#plot(count_in_zips_points)</code></pre>
+</div>
+<div id="puerto-rico-data-represented-as-polygons" class="section level4">
+<h4><em>Puerto Rico data represented as polygons</em></h4>
+<pre class="r"><code>#create count_in_zips_polygons, which is the Puerto Rico zip code polygons joined with the Buffalo shelter data of people coming from each zip code in Puerto Rico, then summarized to give the total count originating from each zip code
 count_in_zips_polygons&lt;-inner_join(Buffalo_Shelter_Data, PRzips, by= c(&quot;Zip&quot; = &quot;ZCTA5CE10&quot;))%&gt;%st_as_sf()%&gt;%group_by(Zip)%&gt;%summarise(n=n())
 #plot(count_in_zips_polygons)</code></pre>
 </div>
 </div>
 <div id="income-for-puerto-rico-zip-codes" class="section level3">
 <h3>Income For Puerto Rico Zip Codes</h3>
-<p>Use the tidycensus package to get the household income data from the US Census Bureau (census.gov). We will download the income data for each zip code (table B19001_001E is the average household income in the past 12 months)</p>
+<p>Since homelessness is often related to income levels, we are interested in the average income in each zip code of origin in Puerto Rico. Use the tidycensus package to get the household income data from the US Census Bureau (census.gov). We will download the income data for each zip code (table B19001_001E is the average household income in the past 12 months)</p>
 <pre class="r"><code>IncomeZipCodeData &lt;-get_acs(geography = &quot;zcta&quot;, variables = &quot;B19001_001E&quot;)</code></pre>
 <p>Join IncomeZipCodeData with PRzips to make PR zips income file</p>
 <pre class="r"><code>PRzipsIncome&lt;-left_join(IncomeZipCodeData, PRzips, by= c(&quot;GEOID&quot; = &quot;ZCTA5CE10&quot;))</code></pre>
@@ -512,19 +462,17 @@ for (j in 1:length(points_in_US$n)) {
   
   lines(inter, col=&quot;black&quot;, lwd=0.6)
 }</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<p><img src="index_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
 <p>As we can see, there are a number of lines originating in Puerto Rico. The next section will specifically explore the phenomenon of people coming from Puerto Rico before becoming homeless in Western New York…</p>
 </div>
 <div id="puerto-rico-to-buffalo" class="section level3">
 <h3>Puerto Rico to Buffalo</h3>
-<div id="zip-code-density" class="section level4">
-<h4>Zip Code Density</h4>
-<p>Zoomed-in map of migration to Buffalo from Puerto Rico along great circle lines, weighted by the number from each place (the darker red the color, the more people coming from the zip code)</p>
+<p>Let’s focus on the migration from Puerto Rico to Buffalo. We can zoom in on the map of migration to Buffalo from Puerto Rico along great circle lines, and color code the lines by the number of people coming from each place (the darker red the color, the more people coming from the zip code)</p>
 <pre class="r"><code>#set the points of origin (&quot;points&quot;) and the final destination in Buffalo (&quot;BuffaloCoordinates&quot;)
 points &lt;- data.frame(count_in_zips_points)
-BuffaloCoordinates=as.matrix(geocode(&quot;Buffalo, NY&quot;))</code></pre>
-<pre><code>## Information from URL : http://maps.googleapis.com/maps/api/geocode/json?address=Buffalo,%20NY&amp;sensor=false</code></pre>
-<pre class="r"><code>#use the map package to create a map of the area of interest
+BuffaloCoordinates=as.matrix(geocode(&quot;Buffalo, NY&quot;))
+
+#use the map package to create a map of the area of interest
 xlim &lt;- c(-90, -60)
 ylim &lt;- c(18, 45)
 map(&quot;world&quot;, col=&quot;#f1f1f1&quot;, fill=TRUE, bg=&quot;white&quot;, lwd=0.2, xlim=xlim, ylim=ylim)
@@ -541,35 +489,27 @@ for (j in 1:length(points$n)) {
   
   lines(inter, col=prettycolors[colindex], lwd=0.8)
 }</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
-<p>Create a choropleth map of density (number of people coming to Buffalo from each Puerto Rican zip code)</p>
+<p><img src="index_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+<div id="zip-code-density" class="section level4">
+<h4>Zip Code Density</h4>
+<p>It is difficult to see <em>where</em> on the island of Puerto Rico people are coming from. Let’s create a choropleth map of density (number of people coming to Buffalo from each Puerto Rican zip code) to make it evident where on the island more people are coming from</p>
 <pre class="r"><code>###use ggplot to create a choropleth map of density
 ggplot(PRzips)+
   geom_sf(lwd=0.2,fill=&quot;#f0f0f0&quot;)+
   geom_sf(data=count_in_zips_polygons, aes(fill = n), col=&quot;transparent&quot;) +
   scale_fill_gradient(low = &quot;yellow&quot;, high = &quot;red&quot;)+
   labs(fill=&quot;Number People&quot;)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
-<p>There are other ways of visualizing this data. For example, the following map will create centroid dots of the zip code of origin, with size indicating the number of individuals coming from that place</p>
-<pre class="r"><code>#create points as data frame to use in ggplot
-points &lt;- data.frame(count_in_zips_points)
-
-#plot
-ggplot(PRzips)+
-  geom_sf(lwd=0.2,fill=&quot;#f0f0f0&quot;)+
-  geom_point(data=points, colour=&quot;red&quot;, alpha=.7, aes(x=Longitude, y=Latitude, size=n))+
-  labs(size=&quot;Number People&quot;)</code></pre>
 <p><img src="index_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
 </div>
 <div id="thinking-about-income" class="section level4">
 <h4>Thinking about Income</h4>
-<p>For fun, lets explore income of Puerto Rico by zip code.</p>
+<p>For fun, lets use the average income data set that we downloaded to explore the income of Puerto Rico by zip code.</p>
 <pre class="r"><code>ggplot(PRzipsIncome)+
 geom_sf(data=PRzipsIncome, aes(fill = estimate), col=&quot;transparent&quot;) +
 scale_fill_gradient(low = &quot;white&quot;, high = &quot;dark green&quot;)+
 labs(fill=&quot;Estimated Average Income ($)&quot;)</code></pre>
 <p><img src="index_files/figure-html/unnamed-chunk-16-1.png" width="672" /></p>
-<p>This can then be overlaid with the number of people coming from each zip code.</p>
+<p>From this map of income, we can see that there is a great deal of variation in average income by zip code on the island of Puerto Rico. We can now overlay this map with the number of people coming from each zip code. The number of people coming from each zip code will be represented as proportional symbols, with larger dots indicating more people originating from a given zip code.</p>
 <pre class="r"><code>ggplot(PRzipsIncome)+
 geom_sf(data=PRzipsIncome, aes(fill = estimate),col=&quot;transparent&quot;) +
 scale_fill_gradient(low = &quot;white&quot;, high = &quot;dark green&quot;)+
@@ -583,15 +523,21 @@ labs(size=&quot;Number People&quot;)</code></pre>
 </div>
 <div id="conclusions" class="section level1">
 <h1>Conclusions</h1>
-<p>Looking at the final map, which overlays the number of individuals from Puerto Rican zip codes with the average household income of the zip code, I was surprised to see that there does not seem to be a strong relationship between income and the number of individuals orginating from that zip code. The total sample size of people coming from Puerto Rico was too small to run any kind of meaningful statistical regression, but a visual examination shows that the zip codes of origin were not necessarily the ones with the lowest average annual incomedata.</p>
+<p>Looking at the final map, which overlays the number of individuals from Puerto Rican zip codes with the average household income of the zip code, I was surprised to see that there does not seem to be a strong relationship between income and the number of individuals orginating from that zip code. It is certainly worth noting that the data is not normalized and there could be many, many explanations for this apparently lack of relationship: for example, the zip codes with lower average incomes may have relatively small populations compared to wealthier zip codes, so it may be possible that people are simply coming from more populous regions. It also may be possible that people in relatively poorer zip codes may not have the resources at their disposal to make their way to Buffalo, as travel is expensive. These are just potential explanations, but they are worth considering. It is also important to note that all of these speculations are drawn merely from visual analysis, as the total sample size of people coming from Puerto Rico was too small to run any kind of meaningful statistical regression.</p>
 <p>On a broader scale, this project has successfully shown where people are coming from before becoming homeless in Western New York. My experience in developing this project has also demonstrated how easy it might be to use R to visualize migration data and the origins of homeless individuals. My ultimate hope is to compare this current data set with similar data sets from other Rust Belt cities, including Cleveland, OH, and Pittsburgh, PA to see if the phenomenon of homeless individuals originating in Puerto Rico extends beyond Buffalo and the Western New York region. This project will be an invaluable tool, as the code for this project could easily be run with other data sets substituted for the Buffalo Shelter Data.</p>
 </div>
 <div id="references" class="section level1">
 <h1>References</h1>
+<div id="the-homelessness-data-set-used-in-this-project-was-generously-provided-by-the-homelessness-alliance-of-western-new-york" class="section level5">
+<h5>The homelessness data set used in this project was generously provided by The Homelessness Alliance of Western New York</h5>
+</div>
+<div id="the-zip-code-polygons-and-the-zip-code-income-data-were-downloaded-from-the-us-census-bureau-census.gov" class="section level5">
+<h5>The zip code polygons and the zip code income data were downloaded from the US Census Bureau (census.gov)</h5>
 <ul>
-<li>The homelessness data set used in this project was generously provided by The Homelessness Alliance of Western New York</li>
-<li>The zip code polygons and the zip code income data were downloaded from the US Census Bureau (census.gov)</li>
+<li>U.S. Census Bureau (2016). US Cartography Boundary Shapefiles - ZIP code tabulation areas (ZCTAs). Retrieved from <a href="https://www.census.gov/geo/maps-data/data/cbf/cbf_zcta.html" class="uri">https://www.census.gov/geo/maps-data/data/cbf/cbf_zcta.html</a></li>
+<li>U.S. Census Bureau (2015). Household Income In The Past 12 Monts (in 2015 Inflation-Adjusted Dollars), 2015 American Community Survey 1-year estimate. Retrieved from <a href="https://factfinder.census.gov/faces/tableservices/jsf/pages/productview.xhtml?src=bkmk" class="uri">https://factfinder.census.gov/faces/tableservices/jsf/pages/productview.xhtml?src=bkmk</a></li>
 </ul>
+</div>
 </div>
 
 <!-- give the footer some space -->
