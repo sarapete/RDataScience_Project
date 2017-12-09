@@ -330,24 +330,12 @@ knitr::opts_chunk$set(cache=TRUE)  # cache the results for quick compiling</code
 </div>
 <div id="load-buffalo-data-set" class="section level3">
 <h3>Load Buffalo Data Set</h3>
-<p>Read in the anonymized data set provided by the Western New York Homeless Alliance (due to the sensitive nature of this file, it is stored locally on my own computer and will not be able to be downloaded)</p>
-<pre class="r"><code>Buffalo_Shelter_Data &lt;- read_csv(&quot;~/Desktop/Adam&#39;s Class/*final project/Buffalo Shelter Data (original).csv&quot;)</code></pre>
-<pre><code>## Parsed with column specification:
-## cols(
-##   Zip = col_character(),
-##   `FAKE ID` = col_integer(),
-##   `Month of Entry` = col_character(),
-##   `Days In Program` = col_integer(),
-##   `Client Age` = col_integer(),
-##   `FAKE HOUSEHOLD ID` = col_number(),
-##   `Household Type` = col_character(),
-##   Gender = col_character(),
-##   Country = col_character(),
-##   `Country Abbreviation` = col_character()
-## )</code></pre>
-<p>Use the zipcode package to clean the zipcodes in the Buffalo Shelter Data CSV. This fixes the entries with “incomplete” zip codes that were thrown out of the data set so that they are useable.</p>
-<pre class="r"><code>clean.zipcodes(Buffalo_Shelter_Data)</code></pre>
-<pre><code>##  [1] NA NA NA NA NA NA NA NA NA NA</code></pre>
+<p>Read in the anonymized data set provided by the Western New York Homeless Alliance (due to the sensitive nature of this file, it is stored locally on my own computer and will not be able to be downloaded). This data set provides anonymized records of each person who checked into homeless shelters in Erie County in 2015. Each time a person visited a shelter, they were given a fake ID and fake household ID. Their age, gender, and household type (e.g. “single parent,” “single adult,” “two parent household”) were recorded, as was their last zip code of residence, the month that they checked into the shelter, and the length of their stay. This data set has a record of all this information, but there are instances where the records are incomplete.</p>
+<pre class="r"><code>Buffalo_Shelter_Data &lt;-read_csv(&quot;~/Desktop/Adam&#39;s Class/*final project/Buffalo Shelter Data 1.csv&quot;)</code></pre>
+<p>Use the zipcode package to create a new vector (“Zip”) by cleaning the zipcodes in the “Zip” column of the Buffalo Shelter Data CSV. The clean.zipcodes function fixes the entries with “incomplete” zip codes that were thrown out of the data set so that they are useable and creates a new vector out of the cleaned zip codes. The recently-created Zip code vector will then be rejoined to the Buffalo Shelter Data dataframe to have the cleaned zip codes (rather than the incomplete ones) in the Buffalo Shelter Data dataframe.</p>
+<pre class="r"><code>Zip&lt;-clean.zipcodes(Buffalo_Shelter_Data$Zip)
+Buffalo_Shelter_Data$Zip &lt;- Zip
+#View(Buffalo_Shelter_Data)</code></pre>
 </div>
 <div id="zip-code-data-frames" class="section level3">
 <h3>Zip Code Data Frames</h3>
@@ -429,8 +417,8 @@ st_as_sf(count_in_zips_points)
 </div>
 <div id="puerto-rico-data-represented-as-polygons" class="section level4">
 <h4><em>Puerto Rico data represented as polygons</em></h4>
-<pre class="r"><code>#create count_in_zips_polygons, which is the Puerto Rico zip code polygons joined with the Buffalo shelter data of people coming from each zip code in Puerto Rico, then summarized to give the total count originating from each zip code
-count_in_zips_polygons&lt;-inner_join(Buffalo_Shelter_Data, PRzips, by= c(&quot;Zip&quot; = &quot;ZCTA5CE10&quot;))%&gt;%st_as_sf()%&gt;%group_by(Zip)%&gt;%summarise(n=n())
+<p>Create count_in_zips_polygons, which is the Puerto Rico zip code polygons joined with the Buffalo shelter data of people coming from each zip code in Puerto Rico, then summarized to give the total count originating from each zip code.</p>
+<pre class="r"><code>count_in_zips_polygons&lt;-inner_join(Buffalo_Shelter_Data, PRzips, by= c(&quot;Zip&quot; = &quot;ZCTA5CE10&quot;))%&gt;%st_as_sf()%&gt;%group_by(Zip)%&gt;%summarise(n=n())
 #plot(count_in_zips_polygons)</code></pre>
 </div>
 </div>
@@ -444,8 +432,8 @@ count_in_zips_polygons&lt;-inner_join(Buffalo_Shelter_Data, PRzips, by= c(&quot;
 </div>
 <div id="results" class="section level1">
 <h1>Results</h1>
-<div id="mapping-the-origin" class="section level3">
-<h3>Mapping the Origin</h3>
+<div id="mapping-migrant-origin-by-zip-code" class="section level3">
+<h3>Mapping Migrant Origin by Zip Code</h3>
 <p>The following map shows the locations across the United States that people originate from before becoming homeless in Western New York</p>
 <pre class="r"><code>#set the points of origin (&quot;points_in_US&quot;) and the final destination in Buffalo (&quot;BuffaloCoordinates&quot;)
 points_in_US&lt;- data.frame(count_in_zips_points_US)
@@ -495,15 +483,15 @@ for (j in 1:length(points$n)) {
 <p>It is difficult to see <em>where</em> on the island of Puerto Rico people are coming from. Let’s create a choropleth map of density (number of people coming to Buffalo from each Puerto Rican zip code) to make it evident where on the island more people are coming from</p>
 <pre class="r"><code>###use ggplot to create a choropleth map of density
 ggplot(PRzips)+
-  geom_sf(lwd=0.2,fill=&quot;#f0f0f0&quot;)+
+  geom_sf(lwd=0.2,fill=&quot;#f0f0f0&quot;, col=&quot;#bdbdbd&quot;)+
   geom_sf(data=count_in_zips_polygons, aes(fill = n), col=&quot;transparent&quot;) +
   scale_fill_gradient(low = &quot;yellow&quot;, high = &quot;red&quot;)+
   labs(fill=&quot;Number People&quot;)</code></pre>
 <p><img src="index_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
 </div>
-<div id="thinking-about-income" class="section level4">
-<h4>Thinking about Income</h4>
-<p>For fun, lets use the average income data set that we downloaded to explore the income of Puerto Rico by zip code.</p>
+<div id="map-of-mean-income-by-zip-code" class="section level4">
+<h4>Map of Mean Income By Zip Code</h4>
+<p>Homelessness is often associated with a region’s overall income levels. To get a sense of economic variation within Puerto Rico, we will use average income data set that we downloaded to map the average mean income in Puerto Rico by zip code.</p>
 <pre class="r"><code>ggplot(PRzipsIncome)+
 geom_sf(data=PRzipsIncome, aes(fill = estimate), col=&quot;transparent&quot;) +
 scale_fill_gradient(low = &quot;white&quot;, high = &quot;dark green&quot;)+
